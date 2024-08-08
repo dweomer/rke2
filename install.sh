@@ -442,6 +442,13 @@ install_airgap_tarball() {
         info "decompressing airgap tarball to ${INSTALL_RKE2_AGENT_IMAGES_DIR}"
         gzip -dc "${TMP_AIRGAP_TARBALL}" > "${INSTALL_RKE2_AGENT_IMAGES_DIR}/rke2-images.${SUFFIX}.tar"
     fi
+    # Search for and install additional rke2 images
+    for IMAGE in "${INSTALL_RKE2_ARTIFACT_PATH}"/rke2-images-*."${SUFFIX}"*; do 
+        if [ -f "${IMAGE}" ]; then
+            info "Installing airgap image from ${IMAGE}"
+            cp "${IMAGE}" "${INSTALL_RKE2_AGENT_IMAGES_DIR}"
+        fi
+    done
 }
 
 # install_dev_rpm orchestrates the installation of RKE2 unsigned development rpms
@@ -478,7 +485,7 @@ install_dev_rpm() {
 # and calls yum to install the required packages.
 do_install_rpm() {
     . /etc/os-release
-    if [ -r /etc/redhat-release ] || [ -r /etc/centos-release ] || [ -r /etc/oracle-release ] || [ -r /etc/amazon-linux-release ] || [ "${ID_LIKE%%[ ]*}" = "suse"  ]; then
+    if [ -r /etc/redhat-release ] || [ -r /etc/centos-release ] || [ -r /etc/oracle-release ] || [ -r /etc/system-release ] || [ "${ID_LIKE%%[ ]*}" = "suse"  ]; then
         repodir=/etc/yum.repos.d
         if [ -d /etc/zypp/repos.d ]; then
             repodir=/etc/zypp/repos.d
@@ -644,10 +651,10 @@ do_install_tar() {
 }
 
 setup_fapolicy_rules() {
-    if [ -r /etc/redhat-release ] || [ -r /etc/centos-release ] || [ -r /etc/oracle-release ] || [ -r /etc/rocky-release ] || [ -r /etc/amazon-linux-release ]; then
+    if [ -r /etc/redhat-release ] || [ -r /etc/centos-release ] || [ -r /etc/oracle-release ] || [ -r /etc/rocky-release ] || [ -r /etc/system-release ]; then
         verify_fapolicyd || return 0
         # setting rke2 fapolicyd rules
-        cat <<-EOF >>"/etc/fapolicyd/rules.d/80-rke2.rules"
+        cat <<-EOF >"/etc/fapolicyd/rules.d/80-rke2.rules"
 allow perm=any all : dir=/var/lib/rancher/
 allow perm=any all : dir=/opt/cni/
 allow perm=any all : dir=/run/k3s/
